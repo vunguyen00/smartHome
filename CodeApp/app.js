@@ -45,6 +45,47 @@ function checkFirebaseConnection() {
   });
 }
 
+// Thiết lập trạng thái cửa và ghi lại giờ đóng mở
+function setDoorStatus(status) {
+  set(ref(database, 'door/status'), status)
+    .then(() => {
+      console.log(`Door status updated to: ${status}`);
+      document.getElementById('doorStatus').innerText = `Door is ${status}`; // Cập nhật trạng thái ngay
+      logDoorActivity(status); // Ghi lại hoạt động của cửa
+      getDoorStatus(); // Cập nhật lại trạng thái
+    })
+    .catch((error) => {
+      console.error(`Error updating door status: `, error);
+    });
+}
+
+// Ghi lại hoạt động của cửa với thời gian
+function logDoorActivity(action) {
+  const timestamp = new Date().toISOString(); // Lấy thời gian hiện tại
+  set(ref(database, `door/log/${timestamp}`), { action: action, timestamp: timestamp })
+    .then(() => {
+      console.log(`Door activity logged: ${action} at ${timestamp}`);
+    })
+    .catch((error) => {
+      console.error("Error logging door activity: ", error);
+    });
+}
+
+// Lấy trạng thái cửa hiện tại
+function getDoorStatus() {
+  get(ref(database, 'door/status')).then((snapshot) => {
+    if (snapshot.exists()) {
+      const status = snapshot.val();
+      console.log(`Current door status: ${status}`);
+      document.getElementById('doorStatus').innerText = `Current door status: ${status}`;
+    } else {
+      console.log("No data available for door.");
+    }
+  }).catch((error) => {
+    console.error("Error getting door status: ", error);
+  });
+}
+
 // Thiết lập trạng thái cho từng LED
 function setLEDStatus(led, status) {
   set(ref(database, `led/${led}/status`), status)
@@ -87,9 +128,14 @@ window.setLEDStatus = setLEDStatus;
 window.getLEDStatus = getLEDStatus;
 window.turnOffAllLEDs = turnOffAllLEDs; // Đặt hàm vào phạm vi toàn cục
 
-// Lấy trạng thái LED khi tải trang
+// Đặt hàm vào phạm vi toàn cục để HTML có thể gọi chúng
+window.setDoorStatus = setDoorStatus;
+window.getDoorStatus = getDoorStatus;
+
+// Lấy trạng thái LED và cửa khi tải trang
 window.onload = () => {
   getLEDStatus('led1');
   getLEDStatus('led2');
   getLEDStatus('led3');
+  getDoorStatus();
 };
