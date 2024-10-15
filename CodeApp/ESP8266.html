@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Control</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Thêm liên kết đến tệp CSS -->
+    <script type="module" src="app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f2f2f2;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50; /* Màu xanh lá cây */
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 5px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049; /* Màu xanh đậm hơn khi hover */
+        }
+        #ledStatus {
+            margin-top: 20px;
+        }
+        .ledStatusLine {
+            margin-bottom: 10px; /* Thêm khoảng cách giữa các trạng thái LED */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="connectionStatus">Connecting...</h1>
+    <h2>LED Status:</h2>
+    <div id="ledStatus">
+        <div class="ledStatusLine" id="led1Status">LED 1 status will appear here.</div>
+        <div class="ledStatusLine" id="led2Status">LED 2 status will appear here.</div>
+        <div class="ledStatusLine" id="led3Status">LED 3 status will appear here.</div>
+    </div>
+
+    <div>
+        <button onclick="setLEDStatus('led1', 'on')">Turn on LED 1</button>
+        <button onclick="setLEDStatus('led1', 'off')">Turn off LED 1</button>
+    </div>
+    <div>
+        <button onclick="setLEDStatus('led2', 'on')">Turn on LED 2</button>
+        <button onclick="setLEDStatus('led2', 'off')">Turn off LED 2</button>
+    </div>
+    <div>
+        <button onclick="setLEDStatus('led3', 'on')">Turn on LED 3</button>
+        <button onclick="setLEDStatus('led3', 'off')">Turn off LED 3</button>
+    </div>
+
+    <button onclick="turnOffAllLEDs()">Turn off All LEDs</button> <!-- Nút tắt tất cả các đèn LED -->
+</body>
+</html>
