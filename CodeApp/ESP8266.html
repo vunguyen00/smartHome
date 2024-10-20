@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED Control</title>
-    <link rel="stylesheet" href="styles.css">
-    <script type="module" src="app.js"></script>
+    <title>LED Control with Timer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -42,6 +40,23 @@
             margin-bottom: 10px;
             font-weight: bold;
         }
+        .container {
+            margin-top: 20px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="time"] {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+        .status {
+            margin-top: 10px;
+        }
+        #lightStatus {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -65,7 +80,7 @@
         <button onclick="setLEDStatus('led1', 'off')">Turn off LED 1</button>
     </div>
     <div>
-        <button onclick="setLEDStatus('led2', 'on')">Turn on LED 2</button>
+        <button onclick="setLEDStatus('led2', 'on')">Turn on LED 2</button> 
         <button onclick="setLEDStatus('led2', 'off')">Turn off LED 2</button>
     </div>
     <div>
@@ -74,5 +89,71 @@
     </div>
 
     <button onclick="turnOffAllLEDs()">Turn off All LEDs</button>
+
+    <div class="container">
+        <h2>Hẹn Giờ Bật/Tắt Đèn</h2>
+        <label for="onTime">Thời gian bật đèn:</label>
+        <input type="time" id="onTime" name="onTime">
+        <label for="offTime">Thời gian tắt đèn:</label>
+        <input type="time" id="offTime" name="offTime">
+        <button onclick="setTimer()">Đặt giờ</button>
+        <div class="status">
+            <p>Trạng thái hiện tại: <span id="lightStatus" class="off">Tắt</span></p>
+        </div>
+    </div>
+
+    <script>
+        function setLEDStatus(led, status) {
+            document.getElementById(led + 'Status').textContent = led.toUpperCase() + ' is ' + status;
+            console.log(led + ' set to ' + status);
+        }
+
+        function setDoorStatus(status) {
+            document.getElementById('doorStatus').textContent = 'Door is ' + status;
+            console.log('Door set to ' + status);
+        }
+
+        function turnOffAllLEDs() {
+            setLEDStatus('led1', 'off');
+            setLEDStatus('led2', 'off');
+            setLEDStatus('led3', 'off');
+        }
+
+        // Timer-related logic
+        function setTimer() {
+            const onTime = document.getElementById('onTime').value;
+            const offTime = document.getElementById('offTime').value;
+            if (!onTime || !offTime) {
+                alert('Vui lòng chọn cả thời gian bật và tắt đèn.');
+                return;
+            }
+
+            const currentTime = new Date();
+            const onTimeDate = new Date(currentTime.toDateString() + ' ' + onTime);
+            const offTimeDate = new Date(currentTime.toDateString() + ' ' + offTime);
+
+            if (onTimeDate > offTimeDate) {
+                alert('Thời gian tắt đèn phải sau thời gian bật đèn.');
+                return;
+            }
+
+            document.getElementById('lightStatus').textContent = 'Đã đặt giờ bật lúc ' + onTime + ' và tắt lúc ' + offTime;
+
+            const timeUntilOn = onTimeDate.getTime() - currentTime.getTime();
+            const timeUntilOff = offTimeDate.getTime() - currentTime.getTime();
+
+            setTimeout(() => {
+                setLEDStatus('led1', 'on');
+                setLEDStatus('led2', 'on');
+                setLEDStatus('led3', 'on');
+                document.getElementById('lightStatus').textContent = 'Đèn đang bật';
+            }, timeUntilOn);
+
+            setTimeout(() => {
+                turnOffAllLEDs();
+                document.getElementById('lightStatus').textContent = 'Đèn đã tắt';
+            }, timeUntilOff);
+        }
+    </script>
 </body>
 </html>

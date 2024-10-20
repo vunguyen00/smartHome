@@ -3,12 +3,13 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
-#define FIREBASE_HOST "https://esp8266-9c680-default-rtdb.asia-southeast1.firebasedatabase.app/"
+// Firebase credentials
+#define FIREBASE_HOST "esp8266-9c680-default-rtdb.asia-southeast1.firebasedatabase.app"
 #define FIREBASE_AUTH "lj98sgCzt1ufAQkiq6WO6fPHRReSep1zzweeTN0p"
 
 // WiFi credentials
-const char* ssid = "Xom Tro Vui Ve";
-const char* password = "Hoang123";
+const char* ssid = "TP_Link-36AA";
+const char* password = "29120574";
 
 // Firebase variables
 FirebaseData firebaseData;
@@ -36,6 +37,7 @@ void setup() {
   pinMode(ledPin3, OUTPUT);
   pinMode(doorPin, OUTPUT); // Set door pin as output
   
+  // Connect to WiFi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -47,7 +49,6 @@ void setup() {
   firebaseConfig.host = FIREBASE_HOST;
   firebaseConfig.signer.tokens.legacy_token = FIREBASE_AUTH;
 
-  // Initialize Firebase
   Firebase.begin(&firebaseConfig, &firebaseAuth);
   Firebase.reconnectWiFi(true);
 
@@ -69,28 +70,46 @@ void loop() {
     previousMillis = currentMillis;
 
     // Read LED statuses from Firebase
-    String ledStatus1 = Firebase.getString(firebaseData, "/led/led1/status") ? firebaseData.stringData() : "";
-    String ledStatus2 = Firebase.getString(firebaseData, "/led/led2/status") ? firebaseData.stringData() : "";
-    String ledStatus3 = Firebase.getString(firebaseData, "/led/led3/status") ? firebaseData.stringData() : "";
+    if (Firebase.get(firebaseData, "/led/led1/status")) {
+      String ledStatus1 = firebaseData.stringData();
+      digitalWrite(ledPin1, ledStatus1 == "on" ? HIGH : LOW);
+      Serial.print("LED 1 status: "); Serial.println(ledStatus1);
+    } else {
+      Serial.println("Failed to get LED 1 status from Firebase");
+      Serial.println(firebaseData.errorReason());
+    }
 
-    // Update LED states
-    digitalWrite(ledPin1, ledStatus1 == "on" ? HIGH : LOW);
-    digitalWrite(ledPin2, ledStatus2 == "on" ? HIGH : LOW);
-    digitalWrite(ledPin3, ledStatus3 == "on" ? HIGH : LOW);
+    if (Firebase.get(firebaseData, "/led/led2/status")) {
+      String ledStatus2 = firebaseData.stringData();
+      digitalWrite(ledPin2, ledStatus2 == "on" ? HIGH : LOW);
+      Serial.print("LED 2 status: "); Serial.println(ledStatus2);
+    } else {
+      Serial.println("Failed to get LED 2 status from Firebase");
+      Serial.println(firebaseData.errorReason());
+    }
 
-    // Debug output
-    Serial.print("LED 1 status: "); Serial.println(ledStatus1);
-    Serial.print("LED 2 status: "); Serial.println(ledStatus2);
-    Serial.print("LED 3 status: "); Serial.println(ledStatus3);
+    if (Firebase.get(firebaseData, "/led/led3/status")) {
+      String ledStatus3 = firebaseData.stringData();
+      digitalWrite(ledPin3, ledStatus3 == "on" ? HIGH : LOW);
+      Serial.print("LED 3 status: "); Serial.println(ledStatus3);
+    } else {
+      Serial.println("Failed to get LED 3 status from Firebase");
+      Serial.println(firebaseData.errorReason());
+    }
+
+    // Control door status from Firebase
+    if (Firebase.get(firebaseData, "/door/status")) {
+      String doorStatus = firebaseData.stringData();
+      digitalWrite(doorPin, doorStatus == "open" ? HIGH : LOW);
+      Serial.print("Door status: "); Serial.println(doorStatus);
+    } else {
+      Serial.println("Failed to get door status from Firebase");
+      Serial.println(firebaseData.errorReason());
+    }
+
+    // Print current time
     Serial.print("Current Time: "); Serial.println(formattedTime);
   }
 
-  // Control door status from Firebase
-  String doorStatus = Firebase.getString(firebaseData, "/door/status") ? firebaseData.stringData() : "";
-  digitalWrite(doorPin, doorStatus == "open" ? HIGH : LOW);
-
-  // Debug output
-  Serial.print("Door status: "); Serial.println(doorStatus);
-  
-  delay(1000);
+  delay(1000); 
 }
