@@ -3,69 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED Control with Timer</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f2f2f2;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #333;
-        }
-        button {
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 5px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #ledStatus, #doorStatus {
-            margin-top: 20px;
-        }
-        .statusLine {
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .container {
-            margin-top: 20px;
-        }
-        label {
-            display: block;
-            margin-top: 10px;
-        }
-        input[type="time"] {
-            margin-bottom: 10px;
-            padding: 5px;
-        }
-        .status {
-            margin-top: 10px;
-        }
-        #lightStatus {
-            font-weight: bold;
-        }
-    </style>
+    <title>LED Control</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="app.js"></script>
 </head>
 <body>
     <h1 id="connectionStatus">Connecting...</h1>
     <h2>LED Status:</h2>
     <div id="ledStatus">
-        <div class="statusLine" id="led1Status">LED 1 status will appear here.</div>
-        <div class="statusLine" id="led2Status">LED 2 status will appear here.</div>
-        <div class="statusLine" id="led3Status">LED 3 status will appear here.</div>
+        <div class="ledStatusLine" id="led1Status">LED 1 status will appear here.</div>
+        <div class="ledStatusLine" id="led2Status">LED 2 status will appear here.</div>
+        <div class="ledStatusLine" id="led3Status">LED 3 status will appear here.</div>
+    </div>
+    <div>
+        <button onclick="setLEDStatus('led1', 'on')">Turn on LED 1</button>
+        <button onclick="setLEDStatus('led1', 'off')">Turn off LED 1</button>
+    </div>
+    <div>
+        <button onclick="setLEDStatus('led2', 'on')">Turn on LED 2</button>
+        <button onclick="setLEDStatus('led2', 'off')">Turn off LED 2</button>
+    </div>
+    <div>
+        <button onclick="setLEDStatus('led3', 'on')">Turn on LED 3</button>
+        <button onclick="setLEDStatus('led3', 'off')">Turn off LED 3</button>
+    </div>
+    <button onclick="turnOffAllLEDs()">Turn off All LEDs</button>
+
+    <h2>Set Schedule for LEDs</h2>
+    <div>
+        <h3>LED 1</h3>
+        On Time: <input type="time" id="led1OnTime">
+        Off Time: <input type="time" id="led1OffTime">
+        <button onclick="saveSchedule('led1')">Set Schedule for LED 1</button>
+    </div>
+    <div>
+        <h3>LED 2</h3>
+        On Time: <input type="time" id="led2OnTime">
+        Off Time: <input type="time" id="led2OffTime">
+        <button onclick="saveSchedule('led2')">Set Schedule for LED 2</button>
+    </div>
+    <div>
+        <h3>LED 3</h3>
+        On Time: <input type="time" id="led3OnTime">
+        Off Time: <input type="time" id="led3OffTime">
+        <button onclick="saveSchedule('led3')">Set Schedule for LED 3</button>
     </div>
 
     <h2>Door Control:</h2>
@@ -75,84 +56,11 @@
         <button onclick="setDoorStatus('close')">Close Door</button>
     </div>
 
-    <div>
-        <button onclick="setLEDStatus('led1', 'on')">Turn on LED 1</button>
-        <button onclick="setLEDStatus('led1', 'off')">Turn off LED 1</button>
-    </div>
-    <div>
-        <button onclick="setLEDStatus('led2', 'on')">Turn on LED 2</button> 
-        <button onclick="setLEDStatus('led2', 'off')">Turn off LED 2</button>
-    </div>
-    <div>
-        <button onclick="setLEDStatus('led3', 'on')">Turn on LED 3</button>
-        <button onclick="setLEDStatus('led3', 'off')">Turn off LED 3</button>
-    </div>
-
-    <button onclick="turnOffAllLEDs()">Turn off All LEDs</button>
-
-    <div class="container">
-        <h2>Hẹn Giờ Bật/Tắt Đèn</h2>
-        <label for="onTime">Thời gian bật đèn:</label>
-        <input type="time" id="onTime" name="onTime">
-        <label for="offTime">Thời gian tắt đèn:</label>
-        <input type="time" id="offTime" name="offTime">
-        <button onclick="setTimer()">Đặt giờ</button>
-        <div class="status">
-            <p>Trạng thái hiện tại: <span id="lightStatus" class="off">Tắt</span></p>
-        </div>
-    </div>
-
     <script>
-        function setLEDStatus(led, status) {
-            document.getElementById(led + 'Status').textContent = led.toUpperCase() + ' is ' + status;
-            console.log(led + ' set to ' + status);
-        }
-
-        function setDoorStatus(status) {
-            document.getElementById('doorStatus').textContent = 'Door is ' + status;
-            console.log('Door set to ' + status);
-        }
-
-        function turnOffAllLEDs() {
-            setLEDStatus('led1', 'off');
-            setLEDStatus('led2', 'off');
-            setLEDStatus('led3', 'off');
-        }
-
-        // Timer-related logic
-        function setTimer() {
-            const onTime = document.getElementById('onTime').value;
-            const offTime = document.getElementById('offTime').value;
-            if (!onTime || !offTime) {
-                alert('Vui lòng chọn cả thời gian bật và tắt đèn.');
-                return;
-            }
-
-            const currentTime = new Date();
-            const onTimeDate = new Date(currentTime.toDateString() + ' ' + onTime);
-            const offTimeDate = new Date(currentTime.toDateString() + ' ' + offTime);
-
-            if (onTimeDate > offTimeDate) {
-                alert('Thời gian tắt đèn phải sau thời gian bật đèn.');
-                return;
-            }
-
-            document.getElementById('lightStatus').textContent = 'Đã đặt giờ bật lúc ' + onTime + ' và tắt lúc ' + offTime;
-
-            const timeUntilOn = onTimeDate.getTime() - currentTime.getTime();
-            const timeUntilOff = offTimeDate.getTime() - currentTime.getTime();
-
-            setTimeout(() => {
-                setLEDStatus('led1', 'on');
-                setLEDStatus('led2', 'on');
-                setLEDStatus('led3', 'on');
-                document.getElementById('lightStatus').textContent = 'Đèn đang bật';
-            }, timeUntilOn);
-
-            setTimeout(() => {
-                turnOffAllLEDs();
-                document.getElementById('lightStatus').textContent = 'Đèn đã tắt';
-            }, timeUntilOff);
+        function saveSchedule(led) {
+            const onTime = document.getElementById(`${led}OnTime`).value;
+            const offTime = document.getElementById(`${led}OffTime`).value;
+            setLEDSchedule(led, onTime, offTime);
         }
     </script>
 </body>

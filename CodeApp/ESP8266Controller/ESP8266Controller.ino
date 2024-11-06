@@ -3,12 +3,11 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
-// Firebase credentials
-#define FIREBASE_HOST "esp8266-9c680-default-rtdb.asia-southeast1.firebasedatabase.app"
+#define FIREBASE_HOST "https://esp8266-9c680-default-rtdb.asia-southeast1.firebasedatabase.app/"
 #define FIREBASE_AUTH "lj98sgCzt1ufAQkiq6WO6fPHRReSep1zzweeTN0p"
 
 // WiFi credentials
-const char* ssid = "TP_Link-36AA";
+const char* ssid = "TP-Link_36AA";
 const char* password = "29120574";
 
 // Firebase variables
@@ -24,7 +23,7 @@ const int doorPin = D5; // Pin for the door
 
 // NTP setup
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP);
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200); // UTC +7 for timezone adjustment
 
 // Time interval for getting Firebase data
 unsigned long previousMillis = 0;
@@ -48,68 +47,60 @@ void setup() {
   // Configure Firebase
   firebaseConfig.host = FIREBASE_HOST;
   firebaseConfig.signer.tokens.legacy_token = FIREBASE_AUTH;
-
   Firebase.begin(&firebaseConfig, &firebaseAuth);
   Firebase.reconnectWiFi(true);
 
   // NTP setup
   timeClient.begin();
-  timeClient.setTimeOffset(25200); // Adjust for timezone (UTC +7)
 }
 
 void loop() {
   // Update NTP client to get the current time
   timeClient.update();
+  String currentTime = timeClient.getFormattedTime();
 
-  // Get the current time in a formatted string
-  String formattedTime = timeClient.getFormattedTime();
-  
   // Check if it's time to get the LED status from Firebase
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
 
-    // Read LED statuses from Firebase
-    if (Firebase.get(firebaseData, "/led/led1/status")) {
-      String ledStatus1 = firebaseData.stringData();
-      digitalWrite(ledPin1, ledStatus1 == "on" ? HIGH : LOW);
-      Serial.print("LED 1 status: "); Serial.println(ledStatus1);
-    } else {
-      Serial.println("Failed to get LED 1 status from Firebase");
-      Serial.println(firebaseData.errorReason());
-    }
-
-    if (Firebase.get(firebaseData, "/led/led2/status")) {
-      String ledStatus2 = firebaseData.stringData();
-      digitalWrite(ledPin2, ledStatus2 == "on" ? HIGH : LOW);
-      Serial.print("LED 2 status: "); Serial.println(ledStatus2);
-    } else {
-      Serial.println("Failed to get LED 2 status from Firebase");
-      Serial.println(firebaseData.errorReason());
-    }
-
-    if (Firebase.get(firebaseData, "/led/led3/status")) {
-      String ledStatus3 = firebaseData.stringData();
-      digitalWrite(ledPin3, ledStatus3 == "on" ? HIGH : LOW);
-      Serial.print("LED 3 status: "); Serial.println(ledStatus3);
-    } else {
-      Serial.println("Failed to get LED 3 status from Firebase");
-      Serial.println(firebaseData.errorReason());
-    }
+    // LED control for each LED with manual override
+    controlLED("led1", ledPin1, currentTime);
+    controlLED("led2", ledPin2, currentTime);
+    controlLED("led3", ledPin3, currentTime);
 
     // Control door status from Firebase
-    if (Firebase.get(firebaseData, "/door/status")) {
-      String doorStatus = firebaseData.stringData();
-      digitalWrite(doorPin, doorStatus == "open" ? HIGH : LOW);
-      Serial.print("Door status: "); Serial.println(doorStatus);
-    } else {
-      Serial.println("Failed to get door status from Firebase");
-      Serial.println(firebaseData.errorReason());
-    }
-
-    // Print current time
-    Serial.print("Current Time: "); Serial.println(formattedTime);
+    String doorStatus = Firebase.getString(firebaseData, "/door/status") ? firebaseData.stringData() : "";
+    digitalWrite(doorPin, doorStatus == "open" ? HIGH : LOW);
+    Serial.print("Door status: "); Serial.println(doorStatus);
   }
 
-  delay(1000); 
+  delay(1000); // Wait 1 second before the next loop iteration
+}
+
+// Function to control LED with schedule and manual control
+void controlLED(const String& ledPath, int ledPin, const String& currentTime) {
+  String ledStatus = Firebase.getString(firebaseData, "/led/" + ledPath + "/status") ? firebaseData.stringData() : "";
+  bool manualControl = Firebase.getBool(firebaseData, "/led/" + ledPath + "/manualControl") ? firebaseData.boolData() : false;
+  String onTime = Firebase.getString(firebaseData, "/led/" + ledPath + "/schedule/onTime") ? firebaseData.stringData() : "";
+  String offTime = Firebase.getString(firebaseData, "/led/" + ledPath + "/schedule/offTime") ? firebaseData.stringData() : "";
+
+  // Check if LED should be on based on schedule
+  bool scheduledOn = (currentTime >= onTime && currentTime < offTime);
+
+  if (manualControl) {
+    // If manual control is enabled, use the manual status
+    digitalWrite(ledPin, ledStatus == "on" ? HIGH : LOW);
+    Serial.print(ledPath + " is under manual control. Status: "); Serial.println(ledStatus);
+  } else {
+    // Follow the schedule if manual control is not active
+    digitalWrite(ledPin, scheduledOn ? HIGH : LOW);
+    Serial.print(ledPath + " is scheduled. Current time: "); Serial.print(currentTime);
+    Serial.print(" | On time: "); Serial.print(onTime); Serial.print(" | Off time: "); Serial.println(offTime);
+  }
+
+  // Reset manual control if it was activated manually
+  if (manualControl && !scheduledOn) {
+    Firebase.setBool(firebaseData, "/led/" + ledPath + "/manualControl", false);
+  }
 }
