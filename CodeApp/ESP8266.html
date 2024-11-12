@@ -3,69 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED Control</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Thêm liên kết đến tệp CSS -->
+    <title>LED Control Panel</title>
+    <link rel="stylesheet" href="styles.css">
     <script type="module" src="app.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
             padding: 20px;
-            background-color: #f2f2f2;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         h1, h2 {
             color: #333;
         }
+        h1 {
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            margin-top: 0;
+        }
         button {
-            background-color: #4CAF50; /* Màu xanh lá cây */
+            background-color: #4CAF50;
             border: none;
             color: white;
-            padding: 10px 15px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
+            padding: 10px 20px;
             font-size: 16px;
-            margin: 5px 2px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 5px;
             transition: background-color 0.3s;
+            margin: 5px;
+            width: 120px;
         }
         button:hover {
-            background-color: #45a049; /* Màu xanh đậm hơn khi hover */
+            background-color: #45a049;
         }
-        #ledStatus {
-            margin-top: 20px;
+        #ledStatus, #doorStatus {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+            color: #555;
         }
         .ledStatusLine {
-            margin-bottom: 10px; /* Thêm khoảng cách giữa các trạng thái LED */
+            margin-bottom: 10px;
+        }
+        .timeInput {
+            font-size: 16px;
+            padding: 5px;
+            margin: 5px 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .timeInput-label {
+            display: inline-block;
+            margin-right: 5px;
             font-weight: bold;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: space-around;
         }
     </style>
 </head>
 <body>
-    <h1 id="connectionStatus">Connecting...</h1>
-    <h2>LED Status:</h2>
-    <div id="ledStatus">
-        <div class="ledStatusLine" id="led1Status">LED 1 status will appear here.</div>
-        <div class="ledStatusLine" id="led2Status">LED 2 status will appear here.</div>
-        <div class="ledStatusLine" id="led3Status">LED 3 status will appear here.</div>
-    </div>
+    <div class="container">
+        <h1>LED Control Panel</h1>
+        <div id="connectionStatus" class="section">Connecting...</div>
 
-    <div>
-        <button onclick="setLEDStatus('led1', 'on')">Turn on LED 1</button>
-        <button onclick="setLEDStatus('led1', 'off')">Turn off LED 1</button>
-    </div>
-    <div>
-        <button onclick="setLEDStatus('led2', 'on')">Turn on LED 2</button>
-        <button onclick="setLEDStatus('led2', 'off')">Turn off LED 2</button>
-    </div>
-    <div>
-        <button onclick="setLEDStatus('led3', 'on')">Turn on LED 3</button>
-        <button onclick="setLEDStatus('led3', 'off')">Turn off LED 3</button>
-    </div>
+        <!-- LED Status Section -->
+        <div class="section">
+            <h2>LED Status</h2>
+            <div id="ledStatus">
+                <div class="ledStatusLine" id="led1Status">LED 1 status will appear here.</div>
+                <div class="ledStatusLine" id="led2Status">LED 2 status will appear here.</div>
+                <div class="ledStatusLine" id="led3Status">LED 3 status will appear here.</div>
+            </div>
+        </div>
 
-    <button onclick="turnOffAllLEDs()">Turn off All LEDs</button> <!-- Nút tắt tất cả các đèn LED -->
+        <!-- LED Control Section -->
+        <div class="section">
+            <h2>LED Control</h2>
+            <div class="button-group">
+                <button onclick="setLEDStatus('led1', 'on')">Turn on LED 1</button>
+                <button onclick="setLEDStatus('led1', 'off')">Turn off LED 1</button>
+            </div>
+            <div class="button-group">
+                <button onclick="setLEDStatus('led2', 'on')">Turn on LED 2</button>
+                <button onclick="setLEDStatus('led2', 'off')">Turn off LED 2</button>
+            </div>
+            <div class="button-group">
+                <button onclick="setLEDStatus('led3', 'on')">Turn on LED 3</button>
+                <button onclick="setLEDStatus('led3', 'off')">Turn off LED 3</button>
+            </div>
+            <button onclick="turnOffAllLEDs()" style="width: 100%;">Turn off All LEDs</button>
+        </div>
+
+        <!-- Door Control Section -->
+        <div class="section">
+            <h2>Door Control</h2>
+            <div class="button-group">
+                <button onclick="setDoorStatus('open')">Open Door</button>
+                <button onclick="setDoorStatus('closed')">Close Door</button>
+            </div>
+            <p id="doorStatus">Current door status: Unknown</p>
+        </div>
+
+        <!-- LED Timer Setup Section -->
+        <div class="section">
+            <h2>LED Timer Setup (All LEDs)</h2>
+            <label class="timeInput-label" for="ledOnTime">On Time:</label>
+            <input type="time" id="ledOnTime" class="timeInput">
+            <label class="timeInput-label" for="ledOffTime">Off Time:</label>
+            <input type="time" id="ledOffTime" class="timeInput">
+            <button onclick="setTimerForAll()" style="width: 100%;">Set Timer for All LEDs</button>
+        </div>
+    </div>
 </body>
 </html>

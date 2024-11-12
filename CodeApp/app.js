@@ -81,15 +81,103 @@ function turnOffAllLEDs() {
   });
   console.log("All LEDs have been turned off.");
 }
+// Hàm để thiết lập trạng thái cửa (mở hoặc đóng)
+function setDoorStatus(status) {
+  set(ref(database, `door/status`), status)
+    .then(() => {
+      console.log(`Door status updated to: ${status}`);
+      document.getElementById('doorStatus').innerText = `Door is ${status}`; // Cập nhật trạng thái ngay trên giao diện
+      getDoorStatus(); // Lấy lại trạng thái cửa
+    })
+    .catch((error) => {
+      console.error(`Error updating door status: `, error);
+    });
+}
+
+// Hàm để lấy trạng thái hiện tại của cửa
+function getDoorStatus() {
+  get(ref(database, `door/status`)).then((snapshot) => {
+    if (snapshot.exists()) {
+      const status = snapshot.val();
+      console.log(`Current door status: ${status}`);
+      document.getElementById('doorStatus').innerText = `Current door status: ${status}`;
+    } else {
+      console.log("No door status data available");
+    }
+  }).catch((error) => {
+    console.error(`Error getting door status: `, error);
+  });
+}
+// Cập nhật trạng thái của tất cả LED
+function updateLEDStatus(status) {
+  const ledRefs = ['led1', 'led2', 'led3'];
+  ledRefs.forEach(led => {
+    set(ref(database, `led/${led}/status`), status)
+      .then(() => console.log(`${led} status updated to: ${status}`))
+      .catch((error) => console.error(`Error updating ${led} status: `, error));
+  });
+}
+
+// Đặt thời gian cho LED và lưu vào Firebase
+function setTimerForAll() {
+  const onTime = document.getElementById("ledOnTime").value;
+  const offTime = document.getElementById("ledOffTime").value;
+
+  if (onTime && offTime) {
+      set(ref(database, "led/onTime"), onTime);
+      set(ref(database, "led/offTime"), offTime);
+      alert(`Timer set for all LEDs: ON at ${onTime}, OFF at ${offTime}`);
+  } else {
+      alert("Please enter both On and Off times.");
+  }
+}
+
+// Kiểm tra và cập nhật trạng thái của từng LED dựa trên thời gian
+function checkLEDTimer() {
+  get(ref(database, "led")).then((snapshot) => {
+    if (snapshot.exists()) {
+      const ledData = snapshot.val();
+      const currentTime = new Date();
+      const currentHours = String(currentTime.getHours()).padStart(2, '0');
+      const currentMinutes = String(currentTime.getMinutes()).padStart(2, '0');
+      const formattedTime = `${currentHours}:${currentMinutes}`;
+
+      const ledRefs = ['led1', 'led2', 'led3']; // Danh sách các LED cần cập nhật
+
+      if (formattedTime === ledData.onTime) {
+        // Bật từng LED khi đến giờ onTime
+        ledRefs.forEach(led => {
+          setLEDStatus(led, 'on'); // Cập nhật trạng thái từng LED thành "on"
+        });
+        console.log("All LEDs have been turned on.");
+      } else if (formattedTime === ledData.offTime) {
+        // Tắt từng LED khi đến giờ offTime
+        ledRefs.forEach(led => {
+          setLEDStatus(led, 'off'); // Cập nhật trạng thái từng LED thành "off"
+        });
+        console.log("All LEDs have been turned off.");
+      }
+    }
+  }).catch((error) => console.error("Error checking LED timer: ", error));
+}
+
+// Thiết lập để kiểm tra giờ onTime và offTime mỗi phút
+setInterval(checkLEDTimer, 15000); // Kiểm tra mỗi phút
+
 
 // Đặt các hàm trong phạm vi toàn cục để HTML có thể gọi chúng
 window.setLEDStatus = setLEDStatus;
 window.getLEDStatus = getLEDStatus;
 window.turnOffAllLEDs = turnOffAllLEDs; // Đặt hàm vào phạm vi toàn cục
+window.setDoorStatus = setDoorStatus;
+window.getDoorStatus = getDoorStatus;
+window.setTimerForAll = setTimerForAll;
+
 
 // Lấy trạng thái LED khi tải trang
 window.onload = () => {
   getLEDStatus('led1');
   getLEDStatus('led2');
   getLEDStatus('led3');
+  getDoorStatus();
 };
