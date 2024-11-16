@@ -4,88 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LED Control Panel</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
     <script type="module" src="app.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f9;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #333;
-        }
-        h1 {
-            text-align: center;
-        }
-        .section {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background-color: #fafafa;
-        }
-        .section h2 {
-            margin-top: 0;
-        }
-        button {
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-            margin: 5px;
-            width: 120px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #ledStatus, #doorStatus {
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 10px;
-            color: #555;
-        }
-        .ledStatusLine {
-            margin-bottom: 10px;
-        }
-        .timeInput {
-            font-size: 16px;
-            padding: 5px;
-            margin: 5px 0;
-            width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .timeInput-label {
-            display: inline-block;
-            margin-right: 5px;
-            font-weight: bold;
-        }
-        .button-group {
-            display: flex;
-            gap: 10px;
-            justify-content: space-around;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <h1>LED Control Panel</h1>
         <div id="connectionStatus" class="section">Connecting...</div>
-
+        <button id="toggleThemeButton" onclick="toggleTheme()" style="width: 100%; margin-bottom: 15px;">
+            Toggle Dark/Light Mode
+        </button>
+        <button id="showChangePassword" onclick="toggleChangePasswordSection()" style="width: 100%; margin-top: 15px;">
+            Change Password
+        </button>
+        <div id="changePasswordContainer" class="change-password-container" style="display: none;">
+            <label for="currentPassword">Current Password:</label>
+            <input type="password" id="currentPassword" placeholder="Enter current password">
+            <label for="newPassword">New Password:</label>
+            <input type="password" id="newPassword" placeholder="Enter new password">
+            <label for="confirmPassword">Confirm New Password:</label>
+            <input type="password" id="confirmPassword" placeholder="Confirm new password">
+            <button onclick="changePassword()">Confirm</button>
+            <p id="passwordChangeStatus"></p>
+        </div>
         <!-- LED Status Section -->
         <div class="section">
             <h2>LED Status</h2>
@@ -111,6 +52,7 @@
                 <button onclick="setLEDStatus('led3', 'on')">Turn on LED 3</button>
                 <button onclick="setLEDStatus('led3', 'off')">Turn off LED 3</button>
             </div>
+            <button onclick="turnOnAllLEDs()" style="width: 100%;">Turn on All LEDs</button>
             <button onclick="turnOffAllLEDs()" style="width: 100%;">Turn off All LEDs</button>
         </div>
 
@@ -133,6 +75,69 @@
             <input type="time" id="ledOffTime" class="timeInput">
             <button onclick="setTimerForAll()" style="width: 100%;">Set Timer for All LEDs</button>
         </div>
+        <!-- PIR Timer Setup Section -->
+        <div class="section">
+            <h2>PIR Timer Setup</h2>
+            <label class="timeInput-label" for="pirOnTime">On Time:</label>
+            <input type="time" id="pirOnTime" class="timeInput">
+            <label class="timeInput-label" for="pirOffTime">Off Time:</label>
+            <input type="time" id="pirOffTime" class="timeInput">
+            <button onclick="setPIRTimer()" style="width: 100%;">Set Timer for PIR</button>
+            <p id="pirTimerStatus"></p>
+        </div>
     </div>
+    <script>
+        function toggleTheme() {
+            // Chuyển đổi lớp 'dark-mode' cho body
+            document.body.classList.toggle('dark-mode');
+
+            // Cập nhật văn bản trên nút để chỉ ra chế độ hiện tại
+            const toggleButton = document.getElementById("toggleThemeButton");
+            toggleButton.textContent = document.body.classList.contains('dark-mode')
+                ? "Switch to Light Mode"
+                : "Switch to Dark Mode";
+        }
+        
+        function toggleChangePasswordSection() {
+            const changePasswordContainer = document.getElementById("changePasswordContainer");
+            changePasswordContainer.style.display = 
+                changePasswordContainer.style.display === "none" ? "block" : "none";
+        }
+
+        // Function to handle password change and send it to the Node.js server
+        async function changePassword() {
+            const currentPassword = document.getElementById("currentPassword").value;
+            const newPassword = document.getElementById("newPassword").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+            const statusMessage = document.getElementById("passwordChangeStatus");
+
+            if (newPassword !== confirmPassword) {
+                statusMessage.textContent = "Passwords do not match.";
+                statusMessage.style.color = "red";
+                return;
+            }
+
+            try {
+                // Send request to Node.js server to update password in Firebase
+                const response = await fetch('/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    statusMessage.textContent = "Password changed successfully!";
+                    statusMessage.style.color = "green";
+                } else {
+                    statusMessage.textContent = "Error: " + data.message;
+                    statusMessage.style.color = "red";
+                }
+            } catch (error) {
+                statusMessage.textContent = "An error occurred.";
+                statusMessage.style.color = "red";
+            }
+        }
+    </script>
 </body>
 </html>

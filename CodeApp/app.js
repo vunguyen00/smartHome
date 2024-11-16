@@ -81,6 +81,13 @@ function turnOffAllLEDs() {
   });
   console.log("All LEDs have been turned off.");
 }
+function turnOnAllLEDs() {
+  const ledRefs = ['led1', 'led2', 'led3']; // Danh sách LED cần tắt
+  ledRefs.forEach(led => {
+    setLEDStatus(led, 'on'); // Tắt từng LED
+  });
+  console.log("All LEDs have been turned off.");
+}
 // Hàm để thiết lập trạng thái cửa (mở hoặc đóng)
 function setDoorStatus(status) {
   set(ref(database, `door/status`), status)
@@ -164,6 +171,103 @@ function checkLEDTimer() {
 // Thiết lập để kiểm tra giờ onTime và offTime mỗi phút
 setInterval(checkLEDTimer, 15000); // Kiểm tra mỗi phút
 
+// Hiển thị/ẩn phần nhập liệu đổi mật khẩu
+function toggleChangePasswordSection() {
+  const changePasswordContainer = document.getElementById("changePasswordContainer");
+  changePasswordContainer.style.display = changePasswordContainer.style.display === "none" ? "block" : "none";
+}
+
+// Hàm đổi mật khẩu và lưu vào Firebase
+function changePassword() {
+  const currentPassword = document.getElementById("currentPassword").value;
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const statusMessage = document.getElementById("passwordChangeStatus");
+
+  // Kiểm tra nếu mật khẩu mới và xác nhận khớp nhau
+  if (newPassword !== confirmPassword) {
+      statusMessage.textContent = "Passwords do not match.";
+      statusMessage.style.color = "red";
+      return;
+  }
+
+  // Ghi mật khẩu mới vào Firebase Realtime Database
+  const passwordRef = ref(database, 'door/password');
+  get(passwordRef)
+      .then((snapshot) => {
+          if (snapshot.exists() && snapshot.val() === currentPassword) {
+              set(passwordRef, newPassword)
+                  .then(() => {
+                      statusMessage.textContent = "Password changed successfully!";
+                      statusMessage.style.color = "green";
+                  })
+                  .catch((error) => {
+                      console.error("Error updating password: ", error);
+                      statusMessage.textContent = "Failed to update password.";
+                      statusMessage.style.color = "red";
+                  });
+          } else {
+              statusMessage.textContent = "Current password is incorrect.";
+              statusMessage.style.color = "red";
+          }
+      })
+      .catch((error) => {
+          console.error("Error reading current password: ", error);
+          statusMessage.textContent = "Error reading current password.";
+          statusMessage.style.color = "red";
+      });
+}
+// Đặt thời gian cho PIR và lưu vào Firebase
+function setPIRTimer() {
+  const onTime = document.getElementById("pirOnTime").value;
+  const offTime = document.getElementById("pirOffTime").value;
+
+  if (onTime && offTime) {
+      // Lưu thời gian vào Firebase
+      set(ref(database, "pir/onTime"), onTime);
+      set(ref(database, "pir/offTime"), offTime);
+      alert(`PIR Timer set: ON at ${onTime}, OFF at ${offTime}`);
+  } else {
+      alert("Please enter both On and Off times.");
+  }
+}
+// Hàm để cập nhật trạng thái PIR khi có sự thay đổi
+function updatePIRStatus(status) {
+  set(ref(database, 'pir/status'), status)
+    .then(() => {
+      console.log(`PIR status updated to: ${status}`);
+      document.getElementById('pirStatus').innerText = `PIR Status: ${status}`; // Update the UI immediately
+    })
+    .catch((error) => {
+      console.error(`Error updating PIR status: `, error);
+    });
+}
+
+// Kiểm tra và cập nhật trạng thái của PIR dựa trên thời gian
+function checkPIRTimer() {
+  get(ref(database, "pir")).then((snapshot) => {
+    if (snapshot.exists()) {
+      const pirData = snapshot.val();
+      const currentTime = new Date();
+      const currentHours = String(currentTime.getHours()).padStart(2, '0');
+      const currentMinutes = String(currentTime.getMinutes()).padStart(2, '0');
+      const formattedTime = `${currentHours}:${currentMinutes}`;
+
+      // Kiểm tra nếu thời gian hiện tại trùng với thời gian ON hoặc OFF
+      if (formattedTime === pirData.onTime) {
+        // Bật PIR khi đến giờ onTime
+        updatePIRStatus("active"); 
+        console.log("PIR sensor activated.");
+      } else if (formattedTime === pirData.offTime) {
+        // Tắt PIR khi đến giờ offTime
+        updatePIRStatus("inactive"); 
+        console.log("PIR sensor deactivated.");
+      }
+    }
+  }).catch((error) => console.error("Error checking PIR timer: ", error));
+}
+
+setInterval(checkPIRTimer, 30000); // Kiểm tra mỗi 30 giây
 
 // Đặt các hàm trong phạm vi toàn cục để HTML có thể gọi chúng
 window.setLEDStatus = setLEDStatus;
@@ -172,6 +276,11 @@ window.turnOffAllLEDs = turnOffAllLEDs; // Đặt hàm vào phạm vi toàn cụ
 window.setDoorStatus = setDoorStatus;
 window.getDoorStatus = getDoorStatus;
 window.setTimerForAll = setTimerForAll;
+window.toggleChangePasswordSection = toggleChangePasswordSection;
+window.changePassword = changePassword;
+window.turnOnAllLEDs = turnOnAllLEDs;
+window.setPIRTimer = setPIRTimer;
+window.updatePIRStatus = updatePIRStatus;
 
 
 // Lấy trạng thái LED khi tải trang
